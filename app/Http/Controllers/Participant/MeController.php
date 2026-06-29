@@ -41,6 +41,32 @@ class MeController extends Controller
         return response()->json($list);
     }
 
+    /** 個資匯出（個資法：當事人可查詢自己的資料）。 */
+    public function exportData(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $player = $user->player;
+
+        return response()->json([
+            'account' => $user->only(['name', 'email', 'created_at']),
+            'player' => $player?->only(['real_name', 'nickname', 'phone', 'birthdate', 'guardian_name', 'guardian_consent', 'portrait_consent']),
+            'beyblades' => $player?->beyblades()->get(['name', 'generation', 'authenticity'])->toArray() ?? [],
+            'registrations' => $player?->registrations()->with('division.tournament')->get()
+                ->map(fn ($r) => ['tournament' => $r->division->tournament->name, 'division' => $r->division->name, 'status' => $r->status->value])->toArray() ?? [],
+        ])->header('Content-Disposition', 'attachment; filename="my-data.json"');
+    }
+
+    /** 撤回肖像權授權（撤回後系統不得再將其影像用於公告/社群）。 */
+    public function withdrawPortrait(Request $request): JsonResponse
+    {
+        $player = $request->user()->player;
+        abort_unless($player, 404);
+        $player->update(['portrait_consent' => false]);
+        \App\Services\AuditService::log($request->user()->id, 'privacy.withdraw_portrait', $player);
+
+        return response()->json(['portrait_consent' => false]);
+    }
+
     /** 送出報名（建立/更新選手資料 → 報名 → 取得付款資訊）。 */
     public function register(Request $request, Division $division, RegistrationService $svc): JsonResponse
     {

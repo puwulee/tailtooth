@@ -36,6 +36,11 @@ Route::get('/api/players/{player}/data', [App\Http\Controllers\RankingController
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'show'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+    // 密碼重設
+    Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendReset'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.update');
 });
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
 
@@ -121,6 +126,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/me/beyblades', [MeController::class, 'beyblades']);
     Route::get('/api/me/registrations', [MeController::class, 'registrations']);
     Route::post('/api/me/register/{division}', [MeController::class, 'register']);
+    Route::get('/api/me/export', [MeController::class, 'exportData']);                  // 個資匯出
+    Route::post('/api/me/withdraw-portrait', [MeController::class, 'withdrawPortrait']); // 肖像權撤回
 
     Route::post('/api/players/{player}/avatar', [ProfileController::class, 'uploadAvatar']);
     Route::post('/api/players/{player}/beyblades', [BeybladeController::class, 'store']);

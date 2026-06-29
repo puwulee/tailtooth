@@ -23,6 +23,7 @@
         <label>密碼</label><input type="password" name="password" required>
         <button type="submit">登入</button>
         <a href="/auth/line/redirect" style="display:block;text-align:center;margin-top:12px;padding:12px;border-radius:10px;background:#06c755;color:#fff;text-decoration:none;font-weight:800">用 LINE 登入 / 報名</a>
+        <p style="text-align:center;margin-top:12px"><a href="/forgot-password" style="color:#9aa6c4;font-size:13px">忘記密碼？</a></p>
     </form>
 </body>
 </html>

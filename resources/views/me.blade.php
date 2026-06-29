@@ -63,6 +63,13 @@
             <h2>我的報名</h2>
             <div id="regs"></div>
         </div>
+
+        <div class="card">
+            <h2>隱私與個資</h2>
+            <p class="psub">依個資法，您可查詢自己的資料或撤回影像授權。</p>
+            <a class="btn" href="/api/me/export">下載我的個資</a>
+            <button onclick="withdraw()" style="background:#3a1320;color:#ff7b94">撤回肖像權授權</button>
+        </div>
     </div>
     <script>
     const pid = document.body.dataset.player;
@@ -99,6 +106,11 @@
         fd.append('authenticity', document.getElementById('auth').value); fd.append('photo', f);
         const r = await fetch(`/api/players/${pid}/beyblades`, {method:'POST', headers:{'X-CSRF-TOKEN':token, Accept:'application/json'}, body: fd});
         if (r.ok) { document.getElementById('bname').value=''; loadBey(); } else alert('登錄失敗');
+    }
+    async function withdraw() {
+        if (!confirm('撤回後系統將不再把您的影像用於公告與社群，確定？')) return;
+        const r = await fetch('/api/me/withdraw-portrait', {method:'POST', headers:{'X-CSRF-TOKEN':token, Accept:'application/json'}});
+        alert(r.ok ? '已撤回肖像權授權' : '操作失敗');
     }
     loadBey(); loadRegs();
     </script>
