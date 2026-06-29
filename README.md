@@ -27,7 +27,26 @@
 | **排行榜** | `app/Services/LeaderboardService.php` | 賽季積分累計、冠軍大頭貼展示 |
 | **照片處理** | `app/Services/BeybladePhotoService.php` | 使用者自拍上傳 → AI 去背（可插拔驅動）→ 浮水印 → 統一尺寸 |
 | **裁判 SPA** | `resources/views/referee.blade.php` + `app/Http/Controllers/RefereeScoringController.php` | 離線優先計分（localStorage 佇列補送）、各場次直播訊號嵌入 |
+| **報名主線** | `app/Services/RegistrationService.php` | 報名→LINE Pay 收款→光貿電子發票；額滿候補、兒童組同意、退費折讓 |
+| **金流/發票驅動** | `app/Services/Payment/*`、`app/Services/Invoice/*` | 可插拔：manual／LINE Pay v3；null／光貿電子發票 |
+| **上傳處理** | `app/Services/PlayerPhotoService.php`、`BeybladePhotoService` | 大頭照（正方裁切）與陀螺照（去背+浮水印+統一尺寸）分流 |
+| **看板/直播** | `app/Services/BoardService.php` + `BroadcastController` | 即時看板、觀眾看板、1920×1080 直播 TV 版面 |
+| **社群圖文/檔案** | `SocialCardService`、`ArchiveService` | 戰果卡圖片產生、賽事成績電子檔案（HTML/結構化） |
 | **存證鏈** | `app/Services/AuditService.php` | 賽務操作以 SHA-256 串接前一筆，防竄改 |
+
+### 重要頁面
+
+| 頁面 | 路由 | 說明 |
+|------|------|------|
+| 裁判計分 SPA | `/referee/{battle}` | 離線優先、大按鈕計分 |
+| 直播 TV 版面 | `/broadcast/{tournament}` | **左賽程/對戰組合、右直播訊號**，1920×1080 全螢幕投電視，含平台簡介 |
+| 觀眾看板 | `/board/{tournament}` | 手機/網頁即時戰況 |
+| 參賽者上傳 | `POST /api/players/{player}/avatar`、`/beyblades` | 大頭照、陀螺登錄（含自拍照，賽前必須完成才可出戰） |
+
+### 出戰資格 gating
+
+選手必須**先在後台登錄陀螺**（含照片處理完成）才能出戰：`Player::competeBlockers(Division)`
+會檢查「足夠數量的可出戰陀螺」與「兒童組監護人同意」。
 
 ### 平台特色（與官方不同之處）
 

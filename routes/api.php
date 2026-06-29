@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\Participant\BeybladeController;
+use App\Http\Controllers\Participant\ProfileController;
 use App\Http\Controllers\RefereeScoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,4 +15,13 @@ Route::prefix('battles/{battle}')->group(function () {
     Route::post('/start', [RefereeScoringController::class, 'start']);
     Route::post('/rounds', [RefereeScoringController::class, 'recordRound']);
     Route::post('/draw', [RefereeScoringController::class, 'recordDraw']);
+});
+
+// 看板資料（供直播 TV / 觀眾看板輪詢）
+Route::get('/broadcast/{tournament}/data', [BroadcastController::class, 'data']);
+
+// 參賽者後台上傳（正式環境套 auth:sanctum；player 應綁定為登入者本人）
+Route::prefix('players/{player}')->group(function () {
+    Route::post('/avatar', [ProfileController::class, 'uploadAvatar']);   // 大頭照
+    Route::post('/beyblades', [BeybladeController::class, 'store']);      // 陀螺登錄（含自拍照）
 });
