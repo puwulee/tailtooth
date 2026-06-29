@@ -9,6 +9,8 @@ use App\Services\Contracts\InvoiceIssuer;
 use App\Services\Contracts\PaymentGateway;
 use App\Services\Invoice\GuangMaoInvoiceIssuer;
 use App\Services\Invoice\NullInvoiceIssuer;
+use App\Services\Contracts\LineProfileFetcher;
+use App\Services\Line\HttpLineProfileFetcher;
 use App\Services\Payment\LinePayGateway;
 use App\Services\Payment\ManualPaymentGateway;
 use App\Services\SettingsService;
@@ -24,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SettingsService::class);
+        $this->app->bind(LineProfileFetcher::class, HttpLineProfileFetcher::class);
 
         // 去背驅動：null（不去背）或 http（自架 rembg / remove.bg）
         $this->app->bind(BackgroundRemover::class, function ($app) {

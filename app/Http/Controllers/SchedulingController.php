@@ -11,16 +11,37 @@ use App\Models\Tournament;
 use App\Models\Venue;
 use App\Services\AuditService;
 use App\Services\BracketService;
+use App\Services\StandingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 賽程編排後台：產生循環賽/單敗淘汰賽程、指派與抽選場地、衝突偵測。
+ * 賽程編排後台：產生循環賽/單敗淘汰賽程、指派與抽選場地、衝突偵測、名次積分結算。
  */
 class SchedulingController extends Controller
 {
-    public function __construct(private BracketService $bracket) {}
+    public function __construct(
+        private BracketService $bracket,
+        private StandingsService $standings,
+    ) {}
+
+    /** 某賽段循環賽排名。 */
+    public function standings(Stage $stage): JsonResponse
+    {
+        return response()->json($this->standings->roundRobinStandings($stage));
+    }
+
+    /** 結算組別名次 → 寫入賽季積分。 */
+    public function finalize(Division $division): JsonResponse
+    {
+        $result = [];
+        foreach ($division->stages as $stage) {
+            $result = $this->standings->finalizeStage($stage);
+        }
+
+        return response()->json(['standings' => $result]);
+    }
 
     /** 編排後台 UI。 */
     public function ui(Tournament $tournament)

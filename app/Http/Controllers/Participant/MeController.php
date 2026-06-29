@@ -35,6 +35,7 @@ class MeController extends Controller
             'division' => $r->division->name,
             'status' => $r->status->value,
             'invoice' => $r->invoice_number,
+            'check_in_token' => in_array($r->status->value, ['paid', 'checked_in'], true) ? $r->check_in_token : null,
         ]) : [];
 
         return response()->json($list);

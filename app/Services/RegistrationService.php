@@ -67,6 +67,7 @@ class RegistrationService
                 'status' => RegistrationStatus::Paid,
                 'payment_ref' => $txn,
                 'paid_at' => now(),
+                'check_in_token' => $registration->check_in_token ?? \Illuminate\Support\Str::random(32),
             ]);
 
             $invoiceNumber = $this->invoice->issue($registration);
@@ -77,15 +78,14 @@ class RegistrationService
                 'invoice_number' => $invoiceNumber,
             ]);
 
-            // 報名確認通知（Email；有 email 才送）
-            $email = $registration->player->user?->email;
-            if ($email) {
-                $this->notifier->email(
-                    $email,
-                    '報名成功：' . $registration->division->tournament->name,
-                    "您已完成報名與繳費。\n組別：{$registration->division->name}\n發票號碼：{$invoiceNumber}",
-                    $registration,
-                );
+            // 報名確認通知（Email + LINE，依綁定狀況）
+            $user = $registration->player->user;
+            $msg = "您已完成報名與繳費。\n組別：{$registration->division->name}\n發票號碼：{$invoiceNumber}";
+            if ($user?->email && ! str_ends_with($user->email, '@line.local')) {
+                $this->notifier->email($user->email, '報名成功：' . $registration->division->tournament->name, $msg, $registration);
+            }
+            if ($user?->line_user_id) {
+                $this->notifier->linePush($user->line_user_id, "🎉 報名成功！\n" . $msg, $registration);
             }
 
             return $registration->fresh();
@@ -102,6 +102,14 @@ class RegistrationService
         AuditService::log($registration->player->user_id, 'registration.checkin', $registration);
 
         return $registration;
+    }
+
+    /** 以 QR 報到 token 報到。 */
+    public function checkInByToken(string $token): Registration
+    {
+        $registration = Registration::where('check_in_token', $token)->firstOrFail();
+
+        return $this->checkIn($registration);
     }
 
     /** 退費：依退費政策決定是否全額；開立折讓單沖銷發票。 */

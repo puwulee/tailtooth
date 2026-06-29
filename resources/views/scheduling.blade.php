@@ -30,6 +30,7 @@
     <header>🗂️ {{ $name }} · 賽程編排後台</header>
     <div class="wrap">
         <div class="links">
+            <a href="/admin/registrations/{{ $tournamentId }}">📋 報名管理</a>
             <a href="/broadcast/{{ $tournamentId }}" target="_blank">▶ 直播 TV 版面</a>
             <a href="/board/{{ $tournamentId }}" target="_blank">📺 觀眾看板</a>
             <a href="/api/broadcast/{{ $tournamentId }}/archive" target="_blank">⬇ 匯出成績</a>
@@ -73,12 +74,23 @@
                 </select>
                 <select class="venue">${venueOptions()}</select>
                 <button class="primary gen">產生賽程</button>
+                <button class="fin">結算積分</button>
               </div>
               <div class="battles" id="battles-${div.id}"></div>
             </div>`).join('');
 
         d.divisions.forEach(div => loadBattles(div.id));
         document.querySelectorAll('.gen').forEach(btn => btn.addEventListener('click', onGenerate));
+        document.querySelectorAll('.fin').forEach(btn => btn.addEventListener('click', onFinalize));
+    }
+
+    async function onFinalize(e) {
+        const id = e.target.closest('.div').dataset.div;
+        try {
+            const r = await post(`/api/scheduling/divisions/${id}/finalize`, {});
+            const top = (r.standings || []).slice(0, 3).map((s, i) => `${i + 1}. ${esc(s.player?.nickname || s.player?.real_name || '')}`).join('　');
+            alert('已結算賽季積分\n' + (top || '（無資料）'));
+        } catch (err) { alert('結算失敗：' + err.message); }
     }
 
     async function onGenerate(e) {

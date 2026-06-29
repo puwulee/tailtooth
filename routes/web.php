@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\RegistrationAdminController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\AppealController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LineLoginController;
 use App\Http\Controllers\Participant\BeybladeController;
 use App\Http\Controllers\Participant\MeController;
 use App\Http\Controllers\Participant\ProfileController;
@@ -17,6 +20,10 @@ use Illuminate\Support\Facades\Route;
 // 前台首頁與報名
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/events/{tournament}/register', [HomeController::class, 'register'])->middleware('auth')->name('events.register');
+
+// LINE Login（報名身分綁定）
+Route::get('/auth/line/redirect', [LineLoginController::class, 'redirect'])->name('line.redirect');
+Route::get('/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
 
 // 認證
 Route::middleware('guest')->group(function () {
@@ -65,6 +72,15 @@ Route::middleware(['auth', 'role:organizer,system,platform'])->group(function ()
     Route::post('/api/scheduling/divisions/{division}/generate', [SchedulingController::class, 'generate']);
     Route::get('/api/scheduling/divisions/{division}/battles', [SchedulingController::class, 'battles']);
     Route::post('/api/scheduling/battles/{battle}/draw-venue', [SchedulingController::class, 'drawVenue']);
+    Route::get('/api/scheduling/stages/{stage}/standings', [SchedulingController::class, 'standings']);
+    Route::post('/api/scheduling/divisions/{division}/finalize', [SchedulingController::class, 'finalize']);
+
+    // 報名管理（報到、退費）
+    Route::get('/admin/registrations/{tournament}', [RegistrationAdminController::class, 'ui'])->name('registrations.ui');
+    Route::get('/api/admin/registrations/{tournament}', [RegistrationAdminController::class, 'index']);
+    Route::post('/api/admin/registrations/{registration}/checkin', [RegistrationAdminController::class, 'checkIn']);
+    Route::post('/api/admin/registrations/{registration}/refund', [RegistrationAdminController::class, 'refund']);
+    Route::post('/api/checkin/{token}', [CheckInController::class, 'scan']);
 
     Route::post('/api/publish/battle/{battle}', [PublishController::class, 'battle']);
 });

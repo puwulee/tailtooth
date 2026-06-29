@@ -16,6 +16,7 @@ class Battle extends Model
         'venue_drawn' => 'boolean',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
+        'scheduled_at' => 'datetime',
     ];
 
     public function stage(): BelongsTo

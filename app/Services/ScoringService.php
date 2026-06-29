@@ -77,6 +77,11 @@ class ScoringService
                 'score' => [$battle->score_a, $battle->score_b],
             ]);
 
+            // 淘汰賽：分出勝負即把勝者送往下一輪
+            if ($battle->status === BattleStatus::Finished) {
+                app(StandingsService::class)->advanceWinner($battle);
+            }
+
             BattleUpdated::dispatch($battle);
 
             return $battle->fresh('rounds');
