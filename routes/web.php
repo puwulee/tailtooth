@@ -4,7 +4,9 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\AppealController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Participant\BeybladeController;
+use App\Http\Controllers\Participant\MeController;
 use App\Http\Controllers\Participant\ProfileController;
 use App\Http\Controllers\PublishController;
 use App\Http\Controllers\RefereeScoringController;
@@ -12,7 +14,9 @@ use App\Http\Controllers\SchedulingController;
 use App\Models\Battle;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => view('welcome'));
+// 前台首頁與報名
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/events/{tournament}/register', [HomeController::class, 'register'])->middleware('auth')->name('events.register');
 
 // 認證
 Route::middleware('guest')->group(function () {
@@ -78,6 +82,11 @@ Route::middleware(['auth', 'role:platform,system'])->group(function () {
 | 參賽者後台：大頭照、陀螺登錄、申訴
 */
 Route::middleware('auth')->group(function () {
+    Route::get('/me', [HomeController::class, 'dashboard'])->name('me');
+    Route::get('/api/me/beyblades', [MeController::class, 'beyblades']);
+    Route::get('/api/me/registrations', [MeController::class, 'registrations']);
+    Route::post('/api/me/register/{division}', [MeController::class, 'register']);
+
     Route::post('/api/players/{player}/avatar', [ProfileController::class, 'uploadAvatar']);
     Route::post('/api/players/{player}/beyblades', [BeybladeController::class, 'store']);
     Route::post('/api/battles/{battle}/appeals', [AppealController::class, 'store']);
