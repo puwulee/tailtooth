@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\BattleStatus;
 use App\Models\Battle;
+use App\Models\Sponsor;
 use App\Models\Tournament;
 
 /**
@@ -30,6 +31,10 @@ class BoardService
             'upcoming' => $battles->where('status', BattleStatus::Pending)->take(8)->map(fn ($b) => $this->present($b))->values(),
             'recent' => $battles->whereIn('status', [BattleStatus::Finished, BattleStatus::Confirmed])
                 ->take(8)->map(fn ($b) => $this->present($b))->values(),
+            'sponsors' => Sponsor::all()->map(fn ($s) => [
+                'name' => $s->name,
+                'logo' => $s->logo_path ? asset('storage/' . $s->logo_path) : null,
+            ])->values(),
         ];
     }
 

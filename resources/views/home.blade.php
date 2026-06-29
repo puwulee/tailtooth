@@ -32,21 +32,23 @@
     <div class="nav">
         <div class="brand">⚔️ TAILTOOTH</div>
         <div>
-            <a href="#events">賽事</a>
-            <a href="/me">我的後台</a>
-            <a class="cta" href="#events">立即報名</a>
+            <a href="#events">{{ __('賽事') }}</a>
+            <a href="/rankings">{{ __('排行榜') }}</a>
+            <a href="/me">{{ __('我的後台') }}</a>
+            <a href="?lang={{ app()->getLocale() === 'en' ? 'zh_TW' : 'en' }}">{{ app()->getLocale() === 'en' ? '中文' : 'EN' }}</a>
+            <a class="cta" href="#events">{{ __('立即報名') }}</a>
         </div>
     </div>
 
     <div class="hero">
-        <h1>戰鬥陀螺競賽平台</h1>
+        <h1>{{ __('戰鬥陀螺競賽平台') }}</h1>
         <p>線上報名、選手與陀螺登錄、裁判即時計分、賽季積分與最強陀螺榜。<br>對齊 Beyblade X 官方點數制 — 少年與成人，皆有熱血舞台。</p>
-        <a class="btn gold" href="#events">瀏覽賽事</a>
-        <a class="btn ghost" href="/me">我的後台</a>
+        <a class="btn gold" href="#events">{{ __('瀏覽賽事') }}</a>
+        <a class="btn ghost" href="/me">{{ __('我的後台') }}</a>
     </div>
 
     <div class="wrap" id="events">
-        <h2 class="sec">近期賽事</h2>
+        <h2 class="sec">{{ __('近期賽事') }}</h2>
         @foreach ($tournaments as $t)
         <div class="ev">
             <h3>{{ $t->name }}</h3>
@@ -72,6 +74,19 @@
             <div class="rule s"><div class="pt">1</div>持續力勝 Spin</div>
         </div>
         <p style="color:#9aa6c4;font-size:14px">單場先達 <b style="color:#ffcb45">4 點</b>獲勝　·　3 顆一組（Deck）　·　回合上限 3 分鐘</p>
+
+        @if ($sponsors->count())
+        <h2 class="sec" style="margin-top:30px">贊助夥伴</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
+            @foreach ($sponsors as $s)
+            <div style="background:#141a28;border:1px solid #26304a;border-radius:12px;padding:14px 18px;text-align:center;min-width:120px">
+                @if ($s->logo_path)<img src="{{ asset('storage/'.$s->logo_path) }}" style="height:44px;object-fit:contain"><br>@endif
+                <span style="font-weight:700">{{ $s->name }}</span>
+                @if ($s->tier)<div style="color:#ffcb45;font-size:12px">{{ $s->tier }}</div>@endif
+            </div>
+            @endforeach
+        </div>
+        @endif
     </div>
 
     <footer>© 2026 Tailtooth 戰鬥陀螺競賽平台　·　LINE 線上報名／光貿電子發票</footer>

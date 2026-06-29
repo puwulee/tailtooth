@@ -72,6 +72,7 @@
                     <b>關於本平台</b>：Tailtooth 是專為戰鬥陀螺打造的競賽平台 —
                     線上報名、選手與陀螺登錄、裁判即時計分（Beyblade X 點數制）、賽季積分與最強陀螺榜。
                     歡迎各路好手報名參戰，少年與成人皆有舞台。
+                    <span id="sponsors" style="float:right"></span>
                 </div>
             </div>
         </main>
@@ -114,6 +115,10 @@
             document.getElementById('liveBox').innerHTML = renderLive(d.live[0]);
             document.getElementById('upcoming').innerHTML = d.upcoming.map(row).join('') || '<div class="tag">—</div>';
             document.getElementById('recent').innerHTML = d.recent.map(row).join('') || '<div class="tag">—</div>';
+            if (d.sponsors && d.sponsors.length) {
+                document.getElementById('sponsors').innerHTML = '贊助：' + d.sponsors.map(s =>
+                    s.logo ? `<img src="${esc(s.logo)}" style="height:28px;vertical-align:middle;margin-left:8px">` : `<b style="color:#ffcb45;margin-left:8px">${esc(s.name)}</b>`).join('');
+            }
 
             // 直播訊號：場次 > 賽事 層級
             const url = (d.live[0] && d.live[0].stream_url) || d.tournament.stream_url;

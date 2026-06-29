@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sponsor;
 use App\Models\Tournament;
 
 class HomeController extends Controller
@@ -12,7 +13,10 @@ class HomeController extends Controller
         $tournaments = Tournament::whereIn('status', ['open', 'ongoing', 'draft'])
             ->with('divisions')->latest('event_date')->get();
 
-        return view('home', ['tournaments' => $tournaments]);
+        return view('home', [
+            'tournaments' => $tournaments,
+            'sponsors' => Sponsor::all(),
+        ]);
     }
 
     /** 報名頁（需登入）。 */

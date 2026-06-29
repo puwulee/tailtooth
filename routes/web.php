@@ -26,6 +26,12 @@ Route::get('/events/{tournament}/register', [HomeController::class, 'register'])
 Route::get('/auth/line/redirect', [LineLoginController::class, 'redirect'])->name('line.redirect');
 Route::get('/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
 
+// 公開排行榜與選手檔案
+Route::get('/rankings', [App\Http\Controllers\RankingController::class, 'index'])->name('rankings');
+Route::get('/api/rankings/data', [App\Http\Controllers\RankingController::class, 'data']);
+Route::get('/players/{player}', [App\Http\Controllers\RankingController::class, 'player'])->name('players.show');
+Route::get('/api/players/{player}/data', [App\Http\Controllers\RankingController::class, 'playerData']);
+
 // 認證
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'show'])->name('login');
@@ -99,6 +105,12 @@ Route::middleware(['auth', 'role:platform,system'])->group(function () {
     Route::get('/admin/settings', [SettingsController::class, 'ui'])->name('settings.ui');
     Route::get('/api/admin/settings', [SettingsController::class, 'index']);
     Route::post('/api/admin/settings', [SettingsController::class, 'update']);
+
+    // 贊助商管理
+    Route::get('/admin/sponsors', [App\Http\Controllers\Admin\SponsorController::class, 'ui'])->name('sponsors.ui');
+    Route::get('/api/admin/sponsors', [App\Http\Controllers\Admin\SponsorController::class, 'index']);
+    Route::post('/api/admin/sponsors', [App\Http\Controllers\Admin\SponsorController::class, 'store']);
+    Route::delete('/api/admin/sponsors/{sponsor}', [App\Http\Controllers\Admin\SponsorController::class, 'destroy']);
 });
 
 /*
