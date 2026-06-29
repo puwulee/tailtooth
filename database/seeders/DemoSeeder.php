@@ -101,6 +101,13 @@ class DemoSeeder extends Seeder
         $players[0]->beyblades()->first()->update(['watermarked_path' => 'demo/bey.png', 'photo_status' => 'done']);
         $players[0]->beyblades()->create(['name' => '藍焰二號', 'generation' => 'beyblade_x', 'authenticity' => 'replica', 'photo_status' => 'processing']);
 
+        // 結算賽季積分（讓排行榜/選手檔案有資料）
+        app(\App\Services\StandingsService::class)->finalizeStage($stage);
+
+        // 贊助商（露出於首頁/看板/直播）
+        \App\Models\Sponsor::create(['name' => '極速陀螺工坊', 'tier' => '鑽石']);
+        \App\Models\Sponsor::create(['name' => 'X 戰魂飲料', 'tier' => '黃金']);
+
         // 一筆待審申訴（取一場已結束的）
         $appealBattle = Battle::where('stage_id', $stage->id)->where('status', BattleStatus::Finished)->first();
         if ($appealBattle) {
