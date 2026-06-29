@@ -25,3 +25,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# 示範截圖與本機腳本（不納入版控）
+/storage/shots
