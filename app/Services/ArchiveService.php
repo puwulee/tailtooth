@@ -42,8 +42,8 @@ class ArchiveService
         ];
     }
 
-    /** 簡易 HTML 公告版本（可直接貼到官網/轉 PDF）。 */
-    public function toHtml(array $results): string
+    /** 成績內容（body 片段），供 HTML 與 PDF 共用。 */
+    public function toHtmlBody(array $results): string
     {
         $rows = '';
         foreach ($results['divisions'] as $div) {
@@ -55,9 +55,15 @@ class ArchiveService
             $rows .= '</ul>';
         }
 
-        return "<!doctype html><meta charset='utf-8'><title>{$results['tournament']} 成績</title>"
-            . "<h1>{$results['tournament']} 成績公告</h1>"
-            . "<p>賽事日期：{$results['event_date']}　產生時間：{$results['generated_at']}</p>"
+        return "<h1>{$results['tournament']} 成績公告</h1>"
+            . "<p class='muted'>賽事日期：{$results['event_date']}　產生時間：{$results['generated_at']}</p>"
             . $rows;
+    }
+
+    /** 簡易 HTML 公告版本（可直接貼到官網）。 */
+    public function toHtml(array $results): string
+    {
+        return "<!doctype html><meta charset='utf-8'><title>{$results['tournament']} 成績</title>"
+            . $this->toHtmlBody($results);
     }
 }

@@ -126,6 +126,24 @@ class SchedulingController extends Controller
         });
     }
 
+    /** 設定對戰排定時間與場地。 */
+    public function schedule(Request $request, Battle $battle): JsonResponse
+    {
+        $data = $request->validate([
+            'scheduled_at' => ['nullable', 'date'],
+            'venue_id' => ['nullable', 'integer', 'exists:venues,id'],
+        ]);
+        $battle->update(array_filter([
+            'scheduled_at' => $data['scheduled_at'] ?? null,
+            'venue_id' => $data['venue_id'] ?? $battle->venue_id,
+        ], fn ($v) => $v !== null));
+
+        return response()->json([
+            'ok' => true,
+            'conflicts' => $this->bracket->detectScheduleConflicts($battle->stage),
+        ]);
+    }
+
     /** 抽選場地（複賽/冠軍戰），記錄抽選人與時間以示公正。 */
     public function drawVenue(Request $request, Battle $battle): JsonResponse
     {

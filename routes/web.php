@@ -6,6 +6,7 @@ use App\Http\Controllers\AppealController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\EquipmentCheckController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LineLoginController;
 use App\Http\Controllers\Participant\BeybladeController;
@@ -61,6 +62,11 @@ Route::middleware(['auth', 'role:referee,scorekeeper,organizer,system,platform']
     Route::get('/api/appeals', [AppealController::class, 'index']);
     Route::post('/api/appeals/{appeal}/rule', [AppealController::class, 'rule']);
     Route::get('/admin/appeals', fn () => view('appeals'))->name('appeals.ui');
+
+    // 裝備驗規（Beyblade Check）
+    Route::get('/admin/equipment/{division}', [EquipmentCheckController::class, 'ui'])->name('equipment.ui');
+    Route::get('/api/equipment/{division}/data', [EquipmentCheckController::class, 'data']);
+    Route::post('/api/equipment/record', [EquipmentCheckController::class, 'record']);
 });
 
 /*
@@ -72,6 +78,7 @@ Route::middleware(['auth', 'role:organizer,system,platform'])->group(function ()
     Route::post('/api/scheduling/divisions/{division}/generate', [SchedulingController::class, 'generate']);
     Route::get('/api/scheduling/divisions/{division}/battles', [SchedulingController::class, 'battles']);
     Route::post('/api/scheduling/battles/{battle}/draw-venue', [SchedulingController::class, 'drawVenue']);
+    Route::post('/api/scheduling/battles/{battle}/schedule', [SchedulingController::class, 'schedule']);
     Route::get('/api/scheduling/stages/{stage}/standings', [SchedulingController::class, 'standings']);
     Route::post('/api/scheduling/divisions/{division}/finalize', [SchedulingController::class, 'finalize']);
 

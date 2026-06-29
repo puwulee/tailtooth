@@ -150,4 +150,37 @@ class BracketService
         // 實務上應比對 battle 的排定時間區間。回傳出賽 >1 的同時段選手。
         return array_keys(array_filter($counts, fn ($c) => $c > 1));
     }
+
+    /**
+     * 時段衝突偵測（依 scheduled_at 與固定時段長度）：
+     * 同一選手或同一場地在重疊時段被排兩場。
+     *
+     * @return array<string>  人類可讀的衝突描述
+     */
+    public function detectScheduleConflicts(Stage $stage, int $slotMinutes = 15): array
+    {
+        $battles = $stage->battles()->whereNotNull('scheduled_at')
+            ->orderBy('scheduled_at')->get();
+
+        $conflicts = [];
+        foreach ($battles as $i => $a) {
+            foreach ($battles->slice($i + 1) as $b) {
+                $overlap = $a->scheduled_at->diffInMinutes($b->scheduled_at) < $slotMinutes;
+                if (! $overlap) {
+                    continue;
+                }
+                if ($a->venue_id && $a->venue_id === $b->venue_id) {
+                    $conflicts[] = "場地撞場：對戰 #{$a->id} 與 #{$b->id} 同場地同時段";
+                }
+                $aPlayers = [$a->player_a_id, $a->player_b_id];
+                foreach ([$b->player_a_id, $b->player_b_id] as $pid) {
+                    if ($pid && in_array($pid, $aPlayers, true)) {
+                        $conflicts[] = "選手撞場：選手 #{$pid} 在對戰 #{$a->id} 與 #{$b->id} 同時段";
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($conflicts));
+    }
 }

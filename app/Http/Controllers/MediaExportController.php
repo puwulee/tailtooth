@@ -23,13 +23,23 @@ class MediaExportController extends Controller
         ]);
     }
 
-    /** 匯出賽事成績電子檔案：?format=html（預設）或 json。 */
+    /** 匯出賽事成績電子檔案：?format=html（預設）/ json / pdf。 */
     public function archive(Request $request, Tournament $tournament, ArchiveService $archive): Response
     {
         $results = $archive->tournamentResults($tournament);
+        $format = $request->query('format', 'html');
 
-        if ($request->query('format') === 'json') {
+        if ($format === 'json') {
             return response()->json($results);
+        }
+
+        if ($format === 'pdf') {
+            $pdf = app(\App\Services\PdfService::class)->render($archive->toHtmlBody($results), $tournament->name . ' 成績');
+
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="tournament-' . $tournament->id . '-results.pdf"',
+            ]);
         }
 
         return response($archive->toHtml($results), 200, [
