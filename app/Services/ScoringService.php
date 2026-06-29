@@ -29,8 +29,14 @@ class ScoringService
         int $winnerBeybladeId,
         int $loserBeybladeId,
         ?int $refereeId = null,
+        ?string $clientEventId = null,
     ): Battle {
-        return DB::transaction(function () use ($battle, $winnerSide, $finish, $winnerBeybladeId, $loserBeybladeId, $refereeId) {
+        // 冪等：離線補送的同一事件只計分一次
+        if ($clientEventId && BattleRound::where('client_event_id', $clientEventId)->exists()) {
+            return $battle->fresh('rounds');
+        }
+
+        return DB::transaction(function () use ($battle, $winnerSide, $finish, $winnerBeybladeId, $loserBeybladeId, $refereeId, $clientEventId) {
             $division = $battle->stage->division;
             $points = $this->pointsFor($division->id, $finish);
 
@@ -40,6 +46,7 @@ class ScoringService
 
             BattleRound::create([
                 'battle_id' => $battle->id,
+                'client_event_id' => $clientEventId,
                 'sequence' => $seq,
                 'winner_player_id' => $winnerPlayerId,
                 'winner_beyblade_id' => $winnerBeybladeId,
@@ -74,11 +81,16 @@ class ScoringService
     }
 
     /** 平手回合（雙方同時停止/出場）— 不計分，僅留紀錄。 */
-    public function recordDraw(Battle $battle, ?int $refereeId = null): Battle
+    public function recordDraw(Battle $battle, ?int $refereeId = null, ?string $clientEventId = null): Battle
     {
+        if ($clientEventId && BattleRound::where('client_event_id', $clientEventId)->exists()) {
+            return $battle->fresh('rounds');
+        }
+
         $seq = (int) $battle->rounds()->max('sequence') + 1;
         BattleRound::create([
             'battle_id' => $battle->id,
+            'client_event_id' => $clientEventId,
             'sequence' => $seq,
             'is_draw' => true,
             'points' => 0,

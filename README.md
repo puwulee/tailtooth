@@ -20,9 +20,27 @@
 | 列舉（規則常數） | `app/Enums/` | Finish 點數、角色、組別、狀態機、賽制格式 |
 | 資料模型 | `app/Models/` | 賽事/組別/選手/陀螺/對戰/回合/場地… |
 | 資料表 | `database/migrations/2026_06_29_000001_create_competition_schema.php` | 完整競賽 schema |
-| **計分引擎** | `app/Services/ScoringService.php` | Beyblade X 點數制（先達 N 點獲勝），逐回合計分、自動判定勝負 |
+| **計分引擎** | `app/Services/ScoringService.php` | Beyblade X 點數制（先達 N 點獲勝），逐回合計分、自動判定勝負、離線補送冪等 |
 | **編排引擎** | `app/Services/BracketService.php` | 循環賽（圓桌法、輪空）、單敗淘汰（種子排序、補輪空）、衝突偵測 |
+| **賽事影印** | `app/Services/TournamentService.php` | 複製賽事/範本（含組別與計分規則）快速開新活動、推廣優惠 |
+| **陀螺統計** | `app/Services/BeybladeStatsService.php` | 每顆陀螺與每種組合(combo)的勝率/得分/finish 分布 |
+| **排行榜** | `app/Services/LeaderboardService.php` | 賽季積分累計、冠軍大頭貼展示 |
+| **照片處理** | `app/Services/BeybladePhotoService.php` | 使用者自拍上傳 → AI 去背（可插拔驅動）→ 浮水印 → 統一尺寸 |
+| **裁判 SPA** | `resources/views/referee.blade.php` + `app/Http/Controllers/RefereeScoringController.php` | 離線優先計分（localStorage 佇列補送）、各場次直播訊號嵌入 |
 | **存證鏈** | `app/Services/AuditService.php` | 賽務操作以 SHA-256 串接前一筆，防竄改 |
+
+### 平台特色（與官方不同之處）
+
+- **正版／非正版分流**：陀螺標記 `authenticity`，賽事以 `authenticity_policy`（僅正版／僅非正版／皆可）分流，可開不同性質的活動觸及更多玩家。
+- **多世代支援**：Plastic／Metal／Burst／Beyblade X／其他；Xtreme Finish 僅限 Beyblade X。
+- **陀螺組合戰績榜**：以 `combo_signature`（世代＋零件，順序無關）跨選手聚合，找出最強 meta。
+- **裁判計分 SPA**：路由 `/referee/{battle}`，網路不穩時離線暫存、回連自動補送（`client_event_id` 冪等不重複計分）。
+- **直播訊號**：賽事層級與各場次（`battles.stream_url`）皆可嵌入直播。
+
+### 照片處理設定
+
+去背驅動以 `BEY_BG_DRIVER` 切換：`null`（預設，不去背）或 `http`（自架 rembg / remove.bg 相容服務，設 `BEY_BG_ENDPOINT`、`BEY_BG_API_KEY`）。
+輸出統一尺寸與浮水印見 `config/beyblade.php`。處理走佇列 `App\Jobs\ProcessBeybladePhoto`。
 
 ### 計分規則（Beyblade X）
 
