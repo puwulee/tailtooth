@@ -12,6 +12,9 @@ Route::get('/', function () {
 Route::get('/broadcast/{tournament}', [BroadcastController::class, 'tv'])->name('broadcast.tv');
 Route::get('/board/{tournament}', [BroadcastController::class, 'board'])->name('broadcast.board');
 
+// 賽程編排後台 UI（正式環境套 auth + role:organizer/system）
+Route::get('/admin/scheduling/{tournament}', [App\Http\Controllers\SchedulingController::class, 'ui'])->name('scheduling.ui');
+
 // 裁判計分 SPA（正式環境請套 auth + role:referee 中介層）
 Route::get('/referee/{battle}', function (Battle $battle) {
     $battle->load('playerA.beyblades', 'playerB.beyblades');

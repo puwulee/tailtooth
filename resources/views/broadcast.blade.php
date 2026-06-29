@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>{{ $name }} · 直播版面</title>
+    <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
     <style>
         /* 固定 1920×1080 16:9，等比縮放鋪滿任意螢幕（電視/投影） */
         :root { --gold:#ffcb45; --a:#ff3b3b; --b:#2f7bff; --line:#26304a; --card:#141a28; }
@@ -78,6 +79,7 @@
 
     <script>
     const tid = document.body.dataset.tournament;
+    const reverb = {!! json_encode($reverb) !!};
     const stage = document.getElementById('stage');
 
     function fit() {
@@ -122,7 +124,20 @@
             }
         } catch (e) { /* 保持畫面 */ }
     }
-    tick(); setInterval(tick, 8000);
+    // 即時推播（Reverb）；連不上則退回輪詢
+    function connectRealtime() {
+        if (!reverb.key || !window.Pusher) return;
+        try {
+            const p = new Pusher(reverb.key, {
+                wsHost: reverb.host, wsPort: reverb.port, wssPort: reverb.port,
+                forceTLS: reverb.scheme === 'https', enabledTransports: ['ws','wss'],
+                cluster: 'mt1', disableStats: true,
+            });
+            p.subscribe('tournament.' + tid).bind('battle.updated', tick);
+        } catch (e) {}
+    }
+    connectRealtime();
+    tick(); setInterval(tick, 10000); // 推播為主，輪詢為備援
     </script>
 </body>
 </html>

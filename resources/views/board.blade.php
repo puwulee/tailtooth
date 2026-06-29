@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $name }} · 觀眾看板</title>
+    <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
     <style>
         :root { --gold:#ffcb45; --a:#ff3b3b; --b:#2f7bff; --line:#26304a; --card:#141a28; }
         * { box-sizing:border-box; }
@@ -29,6 +30,7 @@
     </div>
     <script>
     const tid = document.body.dataset.tournament;
+    const reverb = {!! json_encode($reverb) !!};
     const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const card = (b, live) => `<div class="match ${live?'live':''}">
         <div class="nm">${esc(b.a.name)||'A'}</div><div class="sc a">${b.a.score}</div>
@@ -43,7 +45,20 @@
             document.getElementById('recent').innerHTML = d.recent.map(done).join('') || '<div class="tag">—</div>';
         } catch(e) {}
     }
-    tick(); setInterval(tick, 8000);
+    // 即時推播（Reverb，走 Pusher 協定）；連不上則退回輪詢
+    function connectRealtime() {
+        if (!reverb.key || !window.Pusher) return;
+        try {
+            const p = new Pusher(reverb.key, {
+                wsHost: reverb.host, wsPort: reverb.port, wssPort: reverb.port,
+                forceTLS: reverb.scheme === 'https', enabledTransports: ['ws','wss'],
+                cluster: 'mt1', disableStats: true,
+            });
+            p.subscribe('tournament.' + tid).bind('battle.updated', tick);
+        } catch (e) {}
+    }
+    connectRealtime();
+    tick(); setInterval(tick, 10000); // 推播為主，輪詢為備援
     </script>
 </body>
 </html>

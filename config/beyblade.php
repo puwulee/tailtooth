@@ -13,6 +13,12 @@ return [
         'background' => env('BEY_PHOTO_BG', 'transparent'), // transparent | #RRGGBB
     ],
 
+    /*
+    | 圖文/浮水印用的中文字型（TTF/TTC）。預設用系統的 WenQuanYi Zen Hei（繁簡通用）。
+    | 正式環境請安裝 fonts-wqy-zenhei，或自備字型並設 BEY_FONT_PATH。
+    */
+    'font_path' => env('BEY_FONT_PATH', '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'),
+
     'watermark' => [
         'text' => env('BEY_WATERMARK', 'Tailtooth'),
         'opacity' => (float) env('BEY_WATERMARK_OPACITY', 0.35),

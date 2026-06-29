@@ -11,7 +11,19 @@
 - PHP 8.2+ / **Laravel 13**
 - MySQL／SQLite（開發）
 - Redis（佇列、即時看板）— 後續導入
-- Laravel Reverb（WebSocket 即時計分）— 後續導入
+- **Laravel Reverb（WebSocket 即時推播）** — 看板免輪詢即時更新
+
+### 即時推播（Reverb）
+
+對戰計分變動會發出 `App\Events\BattleUpdated`，廣播到公開頻道 `tournament.{id}`，
+觀眾看板與直播 TV 版面即時更新（連不上時自動退回輪詢）。啟動服務：
+
+```bash
+php artisan reverb:start          # 啟動 WebSocket 伺服器（VPS 上以 supervisor 常駐）
+php artisan queue:work            # 佇列（照片處理、通知）
+```
+
+環境變數見 `.env`（`REVERB_*`、`BROADCAST_CONNECTION=reverb`）。
 
 ## 已實作的核心領域
 
@@ -39,9 +51,18 @@
 | 頁面 | 路由 | 說明 |
 |------|------|------|
 | 裁判計分 SPA | `/referee/{battle}` | 離線優先、大按鈕計分 |
-| 直播 TV 版面 | `/broadcast/{tournament}` | **左賽程/對戰組合、右直播訊號**，1920×1080 全螢幕投電視，含平台簡介 |
-| 觀眾看板 | `/board/{tournament}` | 手機/網頁即時戰況 |
+| 直播 TV 版面 | `/broadcast/{tournament}` | **左賽程/對戰組合、右直播訊號**，1920×1080 全螢幕投電視，含平台簡介；即時推播 |
+| 觀眾看板 | `/board/{tournament}` | 手機/網頁即時戰況；即時推播 |
+| 賽程編排後台 | `/admin/scheduling/{tournament}` | 產生循環賽/單敗淘汰、指派/抽選場地、衝突偵測 |
 | 參賽者上傳 | `POST /api/players/{player}/avatar`、`/beyblades` | 大頭照、陀螺登錄（含自拍照，賽前必須完成才可出戰） |
+| 一鍵匯出 | `GET /api/battles/{battle}/card`、`/broadcast/{tournament}/archive` | 社群戰果卡 PNG、賽事成績檔（html/json）|
+
+### 賽程編排與字型
+
+- 編排引擎依**賽季積分排種**，產生循環賽（圓桌法）或單敗淘汰（種子＋輪空），自動偵測選手衝突。
+- 複賽/冠軍戰可**抽選場地**（以對戰 id 為種子，結果可重現並存證）。
+- 社群圖文以 GD + TrueType 中文字型（`config/beyblade.php` 的 `font_path`，預設 WenQuanYi Zen Hei）渲染；
+  正式環境請安裝 `fonts-wqy-zenhei` 或設 `BEY_FONT_PATH`。
 
 ### 出戰資格 gating
 

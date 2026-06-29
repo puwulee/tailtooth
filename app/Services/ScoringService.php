@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\BattleStatus;
 use App\Enums\FinishType;
+use App\Events\BattleUpdated;
 use App\Models\Battle;
 use App\Models\BattleRound;
 use App\Models\ScoreRule;
@@ -76,6 +77,8 @@ class ScoringService
                 'score' => [$battle->score_a, $battle->score_b],
             ]);
 
+            BattleUpdated::dispatch($battle);
+
             return $battle->fresh('rounds');
         });
     }
@@ -96,6 +99,8 @@ class ScoringService
             'points' => 0,
         ]);
         AuditService::log($refereeId, 'score.draw', $battle, ['sequence' => $seq]);
+
+        BattleUpdated::dispatch($battle);
 
         return $battle->fresh('rounds');
     }
