@@ -12,6 +12,7 @@ use App\Models\Player;
 use App\Models\Registration;
 use App\Models\Stage;
 use App\Models\Tournament;
+use App\Models\User;
 use App\Models\Venue;
 use App\Services\ScoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,6 +22,14 @@ use Tests\TestCase;
 class RealtimeAndSchedulingTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $organizer = User::factory()->create();
+        $organizer->assignRole('organizer');
+        $this->actingAs($organizer->load('roles'));
+    }
 
     private function setupDivision(int $players = 4): array
     {

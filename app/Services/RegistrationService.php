@@ -20,6 +20,7 @@ class RegistrationService
     public function __construct(
         private PaymentGateway $payment,
         private InvoiceIssuer $invoice,
+        private NotificationService $notifier,
     ) {}
 
     /** 建立報名（待付款），額滿則候補。 */
@@ -75,6 +76,17 @@ class RegistrationService
                 'payment_ref' => $txn,
                 'invoice_number' => $invoiceNumber,
             ]);
+
+            // 報名確認通知（Email；有 email 才送）
+            $email = $registration->player->user?->email;
+            if ($email) {
+                $this->notifier->email(
+                    $email,
+                    '報名成功：' . $registration->division->tournament->name,
+                    "您已完成報名與繳費。\n組別：{$registration->division->name}\n發票號碼：{$invoiceNumber}",
+                    $registration,
+                );
+            }
 
             return $registration->fresh();
         });

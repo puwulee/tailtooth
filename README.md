@@ -54,8 +54,34 @@ php artisan queue:work            # 佇列（照片處理、通知）
 | 直播 TV 版面 | `/broadcast/{tournament}` | **左賽程/對戰組合、右直播訊號**，1920×1080 全螢幕投電視，含平台簡介；即時推播 |
 | 觀眾看板 | `/board/{tournament}` | 手機/網頁即時戰況；即時推播 |
 | 賽程編排後台 | `/admin/scheduling/{tournament}` | 產生循環賽/單敗淘汰、指派/抽選場地、衝突偵測 |
+| 後台設定 | `/admin/settings` | 平台/系統角色自行輸入各項 API 金鑰（加密儲存） |
+| 申訴審理台 | `/admin/appeals` | 裁判/主辦審理申訴（成立重判／駁回維持） |
+| 登入 | `/login` | session 登入；角色權限以 `role` 中介層保護 |
 | 參賽者上傳 | `POST /api/players/{player}/avatar`、`/beyblades` | 大頭照、陀螺登錄（含自拍照，賽前必須完成才可出戰） |
-| 一鍵匯出 | `GET /api/battles/{battle}/card`、`/broadcast/{tournament}/archive` | 社群戰果卡 PNG、賽事成績檔（html/json）|
+| 一鍵匯出/發布 | `GET /api/battles/{battle}/card`、`/broadcast/{tournament}/archive`、`POST /api/publish/battle/{battle}` | 社群戰果卡 PNG、成績檔、一鍵產生圖文＋（選配）LINE 廣播 |
+
+### 使用者分級與權限（RBAC）
+
+session 登入（`/login`）+ `role` 中介層。角色：平台/主辦/系統/裁判/記錄員/參賽者。
+首次部署 `php artisan db:seed` 建立平台管理者（`ADMIN_EMAIL`/`ADMIN_PASSWORD` 可覆寫）。
+
+| 範圍 | 角色 |
+|------|------|
+| 後台設定/金鑰 | 平台、系統 |
+| 賽程編排、發布 | 主辦、系統、平台 |
+| 裁判計分、申訴審理 | 裁判、記錄員、主辦、系統、平台 |
+| 上傳/報名/提申訴 | 登入者（參賽者） |
+
+### API 金鑰由後台輸入
+
+`/admin/settings` 可輸入 **LINE Pay、光貿電子發票、LINE 推播、AI 去背** 等金鑰，
+secret 加密儲存、顯示遮罩、即時生效（驅動讀取優先序：後台設定 > config/env）。
+無需改 `.env` 即可上線設定。
+
+### 通知
+
+`NotificationService` 支援 **LINE 官方帳號推播/廣播**（Messaging API，token 由後台輸入）與
+**Email**；報名繳費成功自動寄送確認。所有發送寫入 `notification_logs`。
 
 ### 賽程編排與字型
 

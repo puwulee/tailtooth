@@ -8,12 +8,21 @@ use App\Models\Division;
 use App\Models\Player;
 use App\Models\Stage;
 use App\Models\Tournament;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class RefereeApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $referee = User::factory()->create();
+        $referee->assignRole('referee');
+        $this->actingAs($referee->load('roles'));
+    }
 
     private function scenario(): array
     {
