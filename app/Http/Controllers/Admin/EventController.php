@@ -96,12 +96,14 @@ class EventController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'require_approval' => ['nullable', 'boolean'],
             'allow_anonymous' => ['nullable', 'boolean'],
+            'require_company' => ['nullable', 'boolean'],
             'starts_at' => ['nullable', 'date'],
         ]);
 
         // checkbox 未勾選時不會出現在請求中，明確轉成布林。
         $data['require_approval'] = $request->boolean('require_approval');
         $data['allow_anonymous'] = $request->boolean('allow_anonymous');
+        $data['require_company'] = $request->boolean('require_company');
 
         return $data;
     }

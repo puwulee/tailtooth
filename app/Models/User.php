@@ -36,4 +36,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Event::class);
     }
+
+    /** 此主辦者的公司名單（跨活動共用）。 */
+    public function companies(): HasMany
+    {
+        return $this->hasMany(Company::class);
+    }
 }

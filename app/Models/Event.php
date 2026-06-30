@@ -14,12 +14,13 @@ class Event extends Model
 
     protected $fillable = [
         'user_id', 'title', 'slug', 'code', 'description',
-        'status', 'require_approval', 'allow_anonymous', 'starts_at',
+        'status', 'require_approval', 'allow_anonymous', 'require_company', 'starts_at',
     ];
 
     protected $casts = [
         'require_approval' => 'boolean',
         'allow_anonymous' => 'boolean',
+        'require_company' => 'boolean',
         'starts_at' => 'datetime',
     ];
 

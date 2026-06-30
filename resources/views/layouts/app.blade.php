@@ -101,6 +101,7 @@
         <div class="row">
             @auth
                 <a href="{{ route('admin.events.index') }}">我的活動</a>
+                <a href="{{ route('admin.companies.index') }}">公司名單</a>
                 <form method="POST" action="{{ route('logout') }}" class="inline-form">
                     @csrf
                     <button class="btn ghost sm" type="submit">登出</button>

@@ -19,6 +19,7 @@
                 <span class="pill {{ $event->status }}">{{ $event->isOpen() ? '提問開放中' : '提問已關閉' }}</span>
                 @if ($event->require_approval) <span class="pill">需審核</span> @endif
                 @if (! $event->allow_anonymous) <span class="pill">禁止匿名</span> @endif
+                @if ($event->require_company) <span class="pill">需統編驗證</span> @endif
             </div>
             <div class="row">
                 <a class="btn secondary sm" href="{{ route('admin.events.edit', $event) }}">編輯設定</a>

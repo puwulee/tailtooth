@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Event;
 use App\Models\Question;
 use App\Models\Vote;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -66,6 +68,29 @@ class ParticipantController extends Controller
         ]);
     }
 
+    /** 統編對照：回傳公司名稱（驗證觀眾身分用）。 */
+    public function verify(Request $request, Event $event)
+    {
+        $data = $request->validate(['tax_id' => ['required', 'string', 'max:16']]);
+
+        $company = $this->resolveCompany($event, $data['tax_id']);
+
+        if (! $company) {
+            return response()->json([
+                'ok' => false,
+                'message' => Company::isValidFormat($data['tax_id'])
+                    ? '查無此統編，請確認是否在名單內。'
+                    : '統編格式有誤，請輸入 8 碼數字。',
+            ], 422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'tax_id' => $company->tax_id,
+            'company_name' => $company->name,
+        ]);
+    }
+
     /** 送出提問。 */
     public function storeQuestion(Request $request, Event $event)
     {
@@ -75,7 +100,10 @@ class ParticipantController extends Controller
             'body' => ['required', 'string', 'min:2', 'max:1000'],
             'author_name' => ['nullable', 'string', 'max:60'],
             'token' => ['required', 'string', 'max:64'],
+            'tax_id' => ['nullable', 'string', 'max:16'],
         ]);
+
+        $company = $this->guardCompany($event, $data['tax_id'] ?? null);
 
         $name = $event->allow_anonymous ? ($data['author_name'] ?? null) : ($data['author_name'] ?: null);
 
@@ -83,6 +111,8 @@ class ParticipantController extends Controller
             'body' => trim($data['body']),
             'author_name' => $name ? trim($name) : null,
             'author_token' => $data['token'],
+            'tax_id' => $company?->tax_id,
+            'company_name' => $company?->name,
             'status' => $event->require_approval ? 'pending' : 'published',
         ]);
 
@@ -100,11 +130,14 @@ class ParticipantController extends Controller
 
         $data = $request->validate([
             'token' => ['required', 'string', 'max:64'],
+            'tax_id' => ['nullable', 'string', 'max:16'],
         ]);
+
+        $company = $this->guardCompany($event, $data['tax_id'] ?? null);
 
         $token = $data['token'];
 
-        $voted = DB::transaction(function () use ($question, $token) {
+        $voted = DB::transaction(function () use ($question, $token, $company) {
             $existing = Vote::where('question_id', $question->id)
                 ->where('voter_token', $token)
                 ->lockForUpdate()
@@ -117,7 +150,11 @@ class ParticipantController extends Controller
                 return false;
             }
 
-            Vote::create(['question_id' => $question->id, 'voter_token' => $token]);
+            Vote::create([
+                'question_id' => $question->id,
+                'voter_token' => $token,
+                'tax_id' => $company?->tax_id,
+            ]);
             $question->increment('upvotes_count');
 
             return true;
@@ -127,5 +164,41 @@ class ParticipantController extends Controller
             'voted' => $voted,
             'upvotes' => $question->fresh()->upvotes_count,
         ]);
+    }
+
+    /**
+     * 活動要求統編時，驗證並回傳對應公司；未開啟則回傳 null。
+     */
+    private function guardCompany(Event $event, ?string $taxId): ?Company
+    {
+        if (! $event->require_company) {
+            return null;
+        }
+
+        $company = $this->resolveCompany($event, $taxId);
+
+        if (! $company) {
+            // 這些端點僅供前端 AJAX 呼叫，固定回傳 JSON 422（含 errors.tax_id）。
+            $message = '此活動需通過統編驗證才能參與，請輸入名單內的統一編號。';
+            throw new HttpResponseException(response()->json([
+                'message' => $message,
+                'errors' => ['tax_id' => [$message]],
+            ], 422));
+        }
+
+        return $company;
+    }
+
+    /** 以活動主辦者的名單，將統編對照成公司。 */
+    private function resolveCompany(Event $event, ?string $taxId): ?Company
+    {
+        if (! $event->user_id || ! Company::isValidFormat($taxId)) {
+            return null;
+        }
+
+        return Company::where('user_id', $event->user_id)
+            ->where('tax_id', Company::normalizeTaxId($taxId))
+            ->active()
+            ->first();
     }
 }

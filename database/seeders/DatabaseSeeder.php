@@ -52,5 +52,25 @@ class DatabaseSeeder extends Seeder
                 'upvotes_count' => $votes,
             ]);
         }
+
+        // 公司名單（主辦者共用，供「需統編驗證」的活動使用）
+        $companies = [
+            ['12345675', '台灣示範股份有限公司'],
+            ['53212539', '原創科技運動行銷'],
+            ['04595257', '宏遠興業股份有限公司'],
+        ];
+        foreach ($companies as [$taxId, $name]) {
+            $host->companies()->create(['tax_id' => $taxId, 'name' => $name]);
+        }
+
+        // 需統編驗證的示範活動
+        $host->events()->create([
+            'title' => '示範活動：會員企業表決會（需統編）',
+            'description' => "本活動需以公司身分參與，請輸入貴公司統一編號驗證後提問與投票。",
+            'status' => 'open',
+            'allow_anonymous' => true,
+            'require_approval' => false,
+            'require_company' => true,
+        ]);
     }
 }

@@ -21,3 +21,8 @@
                {{ old('require_approval', $event->require_approval ?? false) ? 'checked' : '' }}>
         提問需審核後才公開（避免不當內容上牆）
     </label>
+    <label class="check">
+        <input type="checkbox" name="require_company" value="1"
+               {{ old('require_company', $event->require_company ?? false) ? 'checked' : '' }}>
+        需輸入統編驗證才能參與（對照<a href="{{ route('admin.companies.index') }}" target="_blank" rel="noopener">公司名單</a>，提問與投票皆須通過）
+    </label>
