@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Question extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'event_id', 'author_name', 'author_token', 'body',
+        'status', 'answer', 'answered_at', 'answered_by', 'pinned',
+    ];
+
+    protected $casts = [
+        'answered_at' => 'datetime',
+        'pinned' => 'boolean',
+    ];
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    public function isAnswered(): bool
+    {
+        return $this->answered_at !== null;
+    }
+
+    /** 公開可見（已上牆，未封存）。 */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
+    /** 顯示用名稱（匿名顯示為「匿名」）。 */
+    public function displayName(): string
+    {
+        return $this->author_name ?: '匿名';
+    }
+}
