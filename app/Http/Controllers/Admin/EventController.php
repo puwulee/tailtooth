@@ -93,17 +93,20 @@ class EventController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:120'],
+            'event_date' => ['required', 'date'],
+            'speaker' => ['required', 'string', 'max:120'],
+            'topic' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'require_approval' => ['nullable', 'boolean'],
             'allow_anonymous' => ['nullable', 'boolean'],
-            'require_company' => ['nullable', 'boolean'],
+            'company_identity' => ['nullable', 'boolean'],
             'starts_at' => ['nullable', 'date'],
         ]);
 
         // checkbox 未勾選時不會出現在請求中，明確轉成布林。
         $data['require_approval'] = $request->boolean('require_approval');
         $data['allow_anonymous'] = $request->boolean('allow_anonymous');
-        $data['require_company'] = $request->boolean('require_company');
+        $data['company_identity'] = $request->boolean('company_identity');
 
         return $data;
     }

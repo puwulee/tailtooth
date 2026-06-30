@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\QuestionGenerationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ParticipantController;
@@ -37,6 +38,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
     Route::put('events/{event}', [EventController::class, 'update'])->name('events.update');
     Route::post('events/{event}/toggle', [EventController::class, 'toggleStatus'])->name('events.toggle');
+    Route::post('events/{event}/generate', [QuestionGenerationController::class, 'generate'])->name('events.generate');
     Route::delete('events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
 
     // 公司名單（主辦者共用，跨活動）

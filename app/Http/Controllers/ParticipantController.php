@@ -6,7 +6,6 @@ use App\Models\Company;
 use App\Models\Event;
 use App\Models\Question;
 use App\Models\Vote;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -49,6 +48,7 @@ class ParticipantController extends Controller
         $questions = $query->get()->map(fn (Question $q) => [
             'id' => $q->id,
             'body' => $q->body,
+            'source' => $q->source,
             'author' => $q->displayName(),
             'mine' => $token !== '' && $q->author_token === $token,
             'upvotes' => $q->upvotes_count,
@@ -103,11 +103,12 @@ class ParticipantController extends Controller
             'tax_id' => ['nullable', 'string', 'max:16'],
         ]);
 
-        $company = $this->guardCompany($event, $data['tax_id'] ?? null);
+        $company = $this->optionalCompany($event, $data['tax_id'] ?? null);
 
         $name = $event->allow_anonymous ? ($data['author_name'] ?? null) : ($data['author_name'] ?: null);
 
         $question = $event->questions()->create([
+            'source' => 'audience',
             'body' => trim($data['body']),
             'author_name' => $name ? trim($name) : null,
             'author_token' => $data['token'],
@@ -133,7 +134,7 @@ class ParticipantController extends Controller
             'tax_id' => ['nullable', 'string', 'max:16'],
         ]);
 
-        $company = $this->guardCompany($event, $data['tax_id'] ?? null);
+        $company = $this->optionalCompany($event, $data['tax_id'] ?? null);
 
         $token = $data['token'];
 
@@ -167,26 +168,16 @@ class ParticipantController extends Controller
     }
 
     /**
-     * 活動要求統編時，驗證並回傳對應公司；未開啟則回傳 null。
+     * 統編為「選填身分」：開啟公司身分且統編在名單中時回傳對應公司，
+     * 否則回傳 null（非會員仍以匿名/暱稱身分參與，不擋下）。
      */
-    private function guardCompany(Event $event, ?string $taxId): ?Company
+    private function optionalCompany(Event $event, ?string $taxId): ?Company
     {
-        if (! $event->require_company) {
+        if (! $event->company_identity || ($taxId ?? '') === '') {
             return null;
         }
 
-        $company = $this->resolveCompany($event, $taxId);
-
-        if (! $company) {
-            // 這些端點僅供前端 AJAX 呼叫，固定回傳 JSON 422（含 errors.tax_id）。
-            $message = '此活動需通過統編驗證才能參與，請輸入名單內的統一編號。';
-            throw new HttpResponseException(response()->json([
-                'message' => $message,
-                'errors' => ['tax_id' => [$message]],
-            ], 422));
-        }
-
-        return $company;
+        return $this->resolveCompany($event, $taxId);
     }
 
     /** 以活動主辦者的名單，將統編對照成公司。 */

@@ -12,7 +12,7 @@ class Question extends Model
     use HasFactory;
 
     protected $fillable = [
-        'event_id', 'author_name', 'author_token', 'tax_id', 'company_name', 'body',
+        'event_id', 'source', 'author_name', 'author_token', 'tax_id', 'company_name', 'body',
         'status', 'answer', 'answered_at', 'answered_by', 'pinned',
     ];
 
@@ -42,9 +42,18 @@ class Question extends Model
         return $query->where('status', 'published');
     }
 
-    /** 顯示用名稱（公司 > 自填名 > 匿名）。 */
+    public function isAi(): bool
+    {
+        return $this->source === 'ai';
+    }
+
+    /** 顯示用名稱（AI 題 > 公司 > 自填名 > 匿名）。 */
     public function displayName(): string
     {
+        if ($this->isAi()) {
+            return '主辦提供';
+        }
+
         return $this->company_name ?: ($this->author_name ?: '匿名');
     }
 }

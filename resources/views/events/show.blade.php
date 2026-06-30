@@ -10,39 +10,43 @@
                 <span class="pill {{ $event->status }}" id="evStatus">
                     {{ $event->isOpen() ? '提問開放中' : '提問已關閉' }}
                 </span>
-                @if ($event->require_company) <span class="pill">需統編驗證</span> @endif
             </div>
             <span class="code-badge">{{ $event->code }}</span>
         </div>
+        <div class="muted" style="margin-top:.6rem; font-size:.92rem;">
+            📅 {{ optional($event->event_date)->toDateString() }} · 🎤 {{ $event->speaker }}
+            @if ($event->topic) · 主題：{{ $event->topic }} @endif
+        </div>
         @if ($event->description)
-            <p class="muted" style="margin-top:.6rem; white-space:pre-wrap;">{{ $event->description }}</p>
+            <p class="muted" style="margin-top:.5rem; white-space:pre-wrap;">{{ $event->description }}</p>
         @endif
     </div>
 
-    @if ($event->require_company)
-    <div class="panel" id="verifyPanel" style="display:none;">
-        <h2>輸入統一編號參與</h2>
-        <p class="muted">本活動需以公司身分參與。請輸入貴公司統一編號，驗證後即可提問與投票。</p>
-        <div class="row" style="align-items:flex-start;">
-            <div style="flex:1; min-width:180px;">
-                <input type="text" id="taxInput" inputmode="numeric" maxlength="8" placeholder="8 碼統一編號"
-                       style="letter-spacing:.1em; font-weight:600;">
-                <div class="errors" id="taxError" style="display:none;"></div>
+    @if ($event->company_identity)
+    <div class="panel" id="identityPanel">
+        <div id="verifyBox">
+            <h2>以公司身分參與（選填）</h2>
+            <p class="muted">輸入貴公司統一編號可顯示為公司名；不輸入也能以匿名身分提問與投票。</p>
+            <div class="row" style="align-items:flex-start;">
+                <div style="flex:1; min-width:180px;">
+                    <input type="text" id="taxInput" inputmode="numeric" maxlength="8" placeholder="8 碼統一編號"
+                           style="letter-spacing:.1em; font-weight:600;">
+                    <div class="errors" id="taxError" style="display:none;"></div>
+                </div>
+                <button class="btn secondary" type="button" id="taxBtn">驗證</button>
             </div>
-            <button class="btn" type="button" id="taxBtn">驗證</button>
         </div>
-    </div>
-
-    <div class="panel" id="identityBar" style="display:none;">
-        <div class="spread">
-            <div>目前以 <strong id="companyName"></strong> 身分參與</div>
-            <button class="btn ghost sm" type="button" id="switchBtn">切換公司</button>
+        <div id="identityBar" style="display:none;">
+            <div class="spread">
+                <div>目前以 <strong id="companyName"></strong> 身分參與</div>
+                <button class="btn ghost sm" type="button" id="switchBtn">改用其他身分</button>
+            </div>
         </div>
     </div>
     @endif
 
     @if ($event->isOpen())
-    <div class="panel" id="askPanel">
+    <div class="panel">
         <h2>我要提問</h2>
         <form id="askForm">
             <textarea id="qbody" maxlength="1000" placeholder="輸入你的問題…" required></textarea>
@@ -73,7 +77,7 @@
     <script>
     (function () {
         const eventId = @json($event->id);
-        const requireCompany = @json((bool) $event->require_company);
+        const companyIdentity = @json((bool) $event->company_identity);
         const urls = {
             list: @json(route('events.questions', $event)),
             ask: @json(route('events.questions.store', $event)),
@@ -89,7 +93,7 @@
             localStorage.setItem('qa_token', token);
         }
 
-        // 公司身分（需統編驗證的活動）
+        // 公司身分（選填）
         const companyKey = 'qa_company_' + eventId;
         let company = null;
         try { company = JSON.parse(localStorage.getItem(companyKey) || 'null'); } catch (e) {}
@@ -104,17 +108,13 @@
             ));
         }
 
-        // ---- 統編驗證 UI ----
+        // ---- 選填統編身分 ----
         function refreshIdentity() {
-            if (!requireCompany) return;
+            if (!companyIdentity) return;
             const verified = !!company;
-            const vp = document.getElementById('verifyPanel');
-            const ib = document.getElementById('identityBar');
-            const ap = document.getElementById('askPanel');
-            if (vp) vp.style.display = verified ? 'none' : '';
-            if (ib) ib.style.display = verified ? '' : 'none';
-            if (ap) ap.style.display = verified ? '' : 'none';
-            if (verified && ib) document.getElementById('companyName').textContent = company.name;
+            document.getElementById('verifyBox').style.display = verified ? 'none' : '';
+            document.getElementById('identityBar').style.display = verified ? '' : 'none';
+            if (verified) document.getElementById('companyName').textContent = company.name;
         }
 
         async function verify() {
@@ -140,7 +140,7 @@
             } catch (e) { err.textContent = '網路錯誤，請再試一次。'; err.style.display = ''; }
         }
 
-        if (requireCompany) {
+        if (companyIdentity) {
             document.getElementById('taxBtn').addEventListener('click', verify);
             document.getElementById('taxInput').addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
             document.getElementById('switchBtn').addEventListener('click', () => {
@@ -151,22 +151,17 @@
             refreshIdentity();
         }
 
-        function needCompany() {
-            if (requireCompany && !company) {
-                const vp = document.getElementById('verifyPanel');
-                if (vp) vp.scrollIntoView({ behavior: 'smooth' });
-                return true;
-            }
-            return false;
-        }
+        function taxId() { return company ? company.tax_id : null; }
 
         // ---- 提問牆 ----
         function render(questions) {
             if (!questions.length) {
-                listEl.innerHTML = '<div class="empty">還沒有人提問，搶第一個吧！</div>';
+                listEl.innerHTML = '<div class="empty">還沒有問題，搶第一個提問吧！</div>';
                 return;
             }
-            listEl.innerHTML = questions.map(q => `
+            listEl.innerHTML = questions.map(q => {
+                const who = q.source === 'ai' ? '🤖 主辦提供' : (esc(q.author) + (q.mine ? '（你）' : ''));
+                return `
                 <div class="qcard ${q.pinned ? 'pinned' : ''}">
                     <div class="qrow">
                         <button class="vote ${q.voted ? 'voted' : ''}" data-id="${q.id}" aria-label="按讚">
@@ -175,14 +170,13 @@
                         <div class="grow">
                             <div class="qbody">${esc(q.body)}</div>
                             <div class="meta">
-                                ${q.pinned ? '📌 置頂 · ' : ''}${esc(q.author)}${q.mine ? '（你）' : ''}
-                                ${q.answered ? ' · ✅ 已回覆' : ''}
+                                ${q.pinned ? '📌 置頂 · ' : ''}${who}${q.answered ? ' · ✅ 已回覆' : ''}
                             </div>
                             ${q.answered ? `<div class="answer"><span class="lbl">主辦回覆</span><div>${esc(q.answer)}</div></div>` : ''}
                         </div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
             listEl.querySelectorAll('.vote').forEach(btn => {
                 btn.addEventListener('click', () => vote(btn.dataset.id));
@@ -206,14 +200,13 @@
         }
 
         async function vote(id) {
-            if (needCompany()) return;
             if (busyVotes[id]) return;
             busyVotes[id] = true;
             try {
                 const res = await fetch(urls.vote.replace('{id}', id), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                    body: JSON.stringify({ token, tax_id: company ? company.tax_id : null }),
+                    body: JSON.stringify({ token, tax_id: taxId() }),
                 });
                 if (res.ok) await load();
             } finally { busyVotes[id] = false; }
@@ -230,7 +223,6 @@
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                if (needCompany()) return;
                 const body = document.getElementById('qbody').value.trim();
                 const name = document.getElementById('qname').value.trim();
                 if (body.length < 2) return;
@@ -240,7 +232,7 @@
                     const res = await fetch(urls.ask, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                        body: JSON.stringify({ body, author_name: name, token, tax_id: company ? company.tax_id : null }),
+                        body: JSON.stringify({ body, author_name: name, token, tax_id: taxId() }),
                     });
                     if (res.ok) {
                         const data = await res.json();
@@ -249,7 +241,7 @@
                             data.pending ? '✅ 已送出，待主辦審核後顯示。' : '✅ 已送出！';
                         await load();
                     } else {
-                        document.getElementById('askHint').textContent = '送出失敗，請確認身分或稍後再試。';
+                        document.getElementById('askHint').textContent = '送出失敗，請稍後再試。';
                     }
                 } finally { btn.disabled = false; }
             });

@@ -6,6 +6,7 @@
 @php
     $pending = $event->questions->where('status', 'pending');
     $published = $event->questions->where('status', 'published');
+    $aiCount = $event->questions->where('source', 'ai')->count();
     $shareUrl = route('events.show', $event);
 @endphp
 
@@ -19,7 +20,12 @@
                 <span class="pill {{ $event->status }}">{{ $event->isOpen() ? '提問開放中' : '提問已關閉' }}</span>
                 @if ($event->require_approval) <span class="pill">需審核</span> @endif
                 @if (! $event->allow_anonymous) <span class="pill">禁止匿名</span> @endif
-                @if ($event->require_company) <span class="pill">需統編驗證</span> @endif
+                @if ($event->company_identity) <span class="pill">統編公司身分</span> @endif
+                <div class="muted" style="margin-top:.5rem; font-size:.9rem;">
+                    📅 {{ optional($event->event_date)->toDateString() ?? '—' }}
+                    · 🎤 {{ $event->speaker ?? '—' }}
+                    · 主題：{{ $event->topic ?? '—' }}
+                </div>
             </div>
             <div class="row">
                 <a class="btn secondary sm" href="{{ route('admin.events.edit', $event) }}">編輯設定</a>
@@ -41,6 +47,23 @@
             </div>
             <a class="btn secondary sm" href="{{ $shareUrl }}" target="_blank" rel="noopener">開啟觀眾頁 ↗</a>
         </div>
+    </div>
+
+    <div class="panel">
+        <div class="spread">
+            <div>
+                <h2 style="margin:0;">AI 產生題目</h2>
+                <p class="muted" style="margin:.3rem 0 0;">
+                    依主題用 AI 產生 10 題（會取代現有 {{ $aiCount }} 題 AI 題目，觀眾提問不受影響）。
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.events.generate', $event) }}" class="inline-form">
+                @csrf
+                <button class="btn" type="submit">🤖 產生 10 題</button>
+            </form>
+        </div>
+        @error('generate')<div class="alert err" style="margin-top:.8rem;">{{ $message }}</div>@enderror
+        @error('topic')<div class="alert err" style="margin-top:.8rem;">{{ $message }}</div>@enderror
     </div>
 
     @if ($pending->isNotEmpty())
@@ -78,7 +101,7 @@
                         <div class="grow">
                             <div class="qbody">{{ $q->body }}</div>
                             <div class="meta">
-                                {{ $q->pinned ? '📌 置頂 · ' : '' }}{{ $q->displayName() }} ·
+                                {{ $q->pinned ? '📌 置頂 · ' : '' }}{{ $q->isAi() ? '🤖 ' : '' }}{{ $q->displayName() }} ·
                                 {{ $q->created_at->diffForHumans() }}
                                 @if ($q->isAnswered()) · ✅ 已回覆 @endif
                             </div>

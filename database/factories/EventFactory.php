@@ -15,10 +15,14 @@ class EventFactory extends Factory
         return [
             'user_id' => User::factory(),
             'title' => fake()->sentence(3),
+            'event_date' => fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
+            'speaker' => fake()->name(),
+            'topic' => fake()->sentence(4),
             'description' => fake()->optional()->paragraph(),
             'status' => 'open',
             'require_approval' => false,
             'allow_anonymous' => true,
+            'company_identity' => false,
         ];
     }
 

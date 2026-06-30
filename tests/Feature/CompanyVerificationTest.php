@@ -13,10 +13,10 @@ class CompanyVerificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function gatedEvent(): array
+    private function companyEvent(): array
     {
         $host = User::factory()->create();
-        $event = Event::factory()->for($host)->create(['require_company' => true]);
+        $event = Event::factory()->for($host)->create(['company_identity' => true]);
         $company = Company::factory()->for($host)->create(['tax_id' => '12345675', 'name' => '示範公司']);
 
         return [$host, $event, $company];
@@ -24,7 +24,7 @@ class CompanyVerificationTest extends TestCase
 
     public function test_verify_returns_company_name_for_listed_tax_id(): void
     {
-        [, $event] = $this->gatedEvent();
+        [, $event] = $this->companyEvent();
 
         $this->postJson(route('events.verify', $event), ['tax_id' => '12345675'])
             ->assertOk()
@@ -33,28 +33,43 @@ class CompanyVerificationTest extends TestCase
 
     public function test_verify_rejects_unlisted_tax_id(): void
     {
-        [, $event] = $this->gatedEvent();
+        [, $event] = $this->companyEvent();
 
         $this->postJson(route('events.verify', $event), ['tax_id' => '99999999'])
             ->assertStatus(422)
             ->assertJson(['ok' => false]);
     }
 
-    public function test_question_blocked_without_valid_tax_id_when_gated(): void
+    public function test_non_member_can_still_ask_without_tax_id(): void
     {
-        [, $event] = $this->gatedEvent();
+        [, $event] = $this->companyEvent();
 
         $this->postJson(route('events.questions.store', $event), [
-            'body' => '沒有統編能問嗎？',
+            'body' => '我沒有統編，可以問嗎？',
+            'author_name' => '路人',
             'token' => 'tok-1',
-        ])->assertStatus(422)->assertJsonValidationErrors('tax_id');
+        ])->assertCreated();
 
-        $this->assertDatabaseCount('questions', 0);
+        $this->assertDatabaseHas('questions', [
+            'body' => '我沒有統編，可以問嗎？',
+            'author_name' => '路人',
+            'company_name' => null,
+            'status' => 'published',
+        ]);
     }
 
-    public function test_question_accepted_with_valid_tax_id_and_records_company(): void
+    public function test_non_member_can_still_vote_without_tax_id(): void
     {
-        [, $event] = $this->gatedEvent();
+        [, $event] = $this->companyEvent();
+        $question = Question::factory()->for($event)->create();
+
+        $this->postJson(route('events.questions.vote', [$event, $question]), ['token' => 'voter-1'])
+            ->assertOk()->assertJson(['voted' => true, 'upvotes' => 1]);
+    }
+
+    public function test_valid_tax_id_records_company_on_question(): void
+    {
+        [, $event] = $this->companyEvent();
 
         $this->postJson(route('events.questions.store', $event), [
             'body' => '以公司身分提問',
@@ -68,21 +83,25 @@ class CompanyVerificationTest extends TestCase
         ]);
     }
 
-    public function test_vote_blocked_without_valid_tax_id_when_gated(): void
-    {
-        [, $event] = $this->gatedEvent();
-        $question = Question::factory()->for($event)->create();
-
-        $this->postJson(route('events.questions.vote', [$event, $question]), ['token' => 'voter-1'])
-            ->assertStatus(422);
-
-        $this->assertSame(0, $question->fresh()->upvotes_count);
-    }
-
-    public function test_inactive_company_is_rejected(): void
+    public function test_company_identity_off_ignores_tax_id(): void
     {
         $host = User::factory()->create();
-        $event = Event::factory()->for($host)->create(['require_company' => true]);
+        $event = Event::factory()->for($host)->create(['company_identity' => false]);
+        Company::factory()->for($host)->create(['tax_id' => '12345675', 'name' => '示範公司']);
+
+        $this->postJson(route('events.questions.store', $event), [
+            'body' => '身分功能關閉',
+            'token' => 'tok-1',
+            'tax_id' => '12345675',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('questions', ['body' => '身分功能關閉', 'company_name' => null]);
+    }
+
+    public function test_inactive_company_is_rejected_on_verify(): void
+    {
+        $host = User::factory()->create();
+        $event = Event::factory()->for($host)->create(['company_identity' => true]);
         Company::factory()->for($host)->inactive()->create(['tax_id' => '12345675']);
 
         $this->postJson(route('events.verify', $event), ['tax_id' => '12345675'])
@@ -93,8 +112,7 @@ class CompanyVerificationTest extends TestCase
     {
         $hostA = User::factory()->create();
         $hostB = User::factory()->create();
-        $event = Event::factory()->for($hostA)->create(['require_company' => true]);
-        // 同一統編只在 hostB 的名單中
+        $event = Event::factory()->for($hostA)->create(['company_identity' => true]);
         Company::factory()->for($hostB)->create(['tax_id' => '12345675']);
 
         $this->postJson(route('events.verify', $event), ['tax_id' => '12345675'])
