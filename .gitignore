@@ -1,0 +1,11 @@
+# 上傳的客戶檔案（不進版控）
+/uploads/*
+!/uploads/.gitkeep
+
+# 本機設定
+config/config.local.php
+*.log
+
+# 系統檔
+.DS_Store
+Thumbs.db
